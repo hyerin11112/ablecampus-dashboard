@@ -1168,6 +1168,26 @@ def main() -> None:
                   if not all_items:
                       st.markdown('<span style="color:#666666;font-size:19px">과제 없음</span>',
                                   unsafe_allow_html=True)
+
+                  # ── 기타 업무 체크박스 + 입력 ──
+                  st.markdown('<hr style="margin:8px 0;border:none;border-top:1px dashed #D0D8E8">', unsafe_allow_html=True)
+                  other_tasks = data.get("focus_other_tasks", {})
+                  prev_other = other_tasks.get(person, {})
+                  other_checked = st.checkbox(
+                      "📋 기타 업무",
+                      value=prev_other.get("enabled", False),
+                      key=f"fc_other_{person}",
+                  )
+                  other_text = ""
+                  if other_checked:
+                      other_text = st.text_input(
+                          "기타 업무 내용",
+                          value=prev_other.get("text", ""),
+                          placeholder="어떤 업무를 하고 있는지 간단히 입력…",
+                          key=f"fc_other_text_{person}",
+                          label_visibility="collapsed",
+                      )
+
                   if st.button("💾 저장", key=f"fc_save_{person}", use_container_width=True):
                       # 기존 focus 전부 해제
                       for col_id, iid in all_items:
@@ -1175,6 +1195,13 @@ def main() -> None:
                       # 체크된 것만 순서대로 1,2,3...
                       for rank, iid in enumerate(checked_ids, 1):
                           data["items"][iid]["focus_rank"] = rank
+                      # 기타 업무 저장
+                      if "focus_other_tasks" not in data:
+                          data["focus_other_tasks"] = {}
+                      if other_checked:
+                          data["focus_other_tasks"][person] = {"enabled": True, "text": other_text}
+                      else:
+                          data["focus_other_tasks"][person] = {"enabled": False, "text": ""}
                       save_data()
                       st.rerun()
               else:
@@ -1317,7 +1344,18 @@ def main() -> None:
                                       on_change=_on_action_memo,
                                       args=(iid, editing_ai["id"], f"ai_memo_{editing_ai['id']}"),
                                   )
-                  else:
+                  # ── 기타 업무 카드 (일반 모드) ──
+                  _other = data.get("focus_other_tasks", {}).get(person, {})
+                  if _other.get("enabled"):
+                      _other_text = _other.get("text", "").strip()
+                      _other_desc = f'<div style="font-size:12px;color:#555;margin-top:4px">{_other_text}</div>' if _other_text else ''
+                      st.markdown(
+                          f'<div style="background:#FFF9EC;border:1px solid #F0DFB4;border-radius:8px;'
+                          f'padding:10px 12px;margin-top:6px">'
+                          f'<span style="font-size:13px;font-weight:600;color:#B8860B">📋 기타 업무</span>'
+                          f'{_other_desc}</div>',
+                          unsafe_allow_html=True)
+                  if not items_list and not _other.get("enabled"):
                       st.markdown(
                           '<div style="background:#FFFFFF;border-radius:5px;padding:14px 8px;'
                           'margin-top:4px;text-align:center;border:1px dashed #D0D8E8">'
